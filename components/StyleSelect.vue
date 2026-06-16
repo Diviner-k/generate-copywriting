@@ -5,6 +5,7 @@
     :style="cardStyle"
     @click="$emit('select')"
   >
+    <view v-if="selected" class="style-card__check">✓</view>
     <text class="style-card__icon" :style="{ color: color }">{{ icon }}</text>
     <text class="style-card__label">{{ label }}</text>
   </view>
@@ -32,8 +33,9 @@ export default {
       if (!this.selected) return {}
       const { r, g, b } = hexToRgb(this.color)
       return {
-        backgroundColor: `rgba(${r}, ${g}, ${b}, 0.15)`,
-        borderColor: this.color
+        backgroundColor: `rgba(${r}, ${g}, ${b}, 0.22)`,
+        borderColor: this.color,
+        boxShadow: `0 6rpx 24rpx rgba(${r}, ${g}, ${b}, 0.35)`
       }
     }
   }
@@ -55,6 +57,7 @@ export default {
   flex-shrink: 0;
   box-sizing: border-box;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
 }
 
 .style-card:active {
@@ -62,8 +65,28 @@ export default {
 }
 
 .style-card--selected {
-  border-width: 3rpx;
-  transform: translateY(-4rpx);
+  border-width: 4rpx;
+  border-style: solid;
+  transform: scale(1.06);
+}
+
+/* ✓ checkmark badge */
+.style-card__check {
+  position: absolute;
+  top: -10rpx;
+  right: -10rpx;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: #2D1528;
+  color: #FFFFFF;
+  font-size: 24rpx;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.2);
+  z-index: 2;
 }
 
 .style-card__icon {
