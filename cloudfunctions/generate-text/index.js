@@ -66,16 +66,24 @@ exports.main = async (event) => {
       })
     })
 
+    const resText = await res.text()
+    console.log('DashScope response status:', res.status, 'body length:', resText.length)
+
     if (!res.ok) {
-      const errText = await res.text().catch(() => '')
-      console.error('DashScope API error:', res.status, errText)
+      console.error('DashScope API error:', res.status, resText)
       if (res.status === 401 || res.status === 403) {
         return { error: true, message: 'API Key 无效，请检查 DASHSCOPE_API_KEY' }
       }
       return { error: true, message: `AI 服务错误(${res.status})，请重试` }
     }
 
-    const data = await res.json()
+    let data
+    try {
+      data = JSON.parse(resText)
+    } catch (parseErr) {
+      console.error('JSON parse failed, raw response:', resText.substring(0, 500))
+      return { error: true, message: `AI 返回非 JSON：${resText.substring(0, 100)}` }
+    }
 
     if (data.choices && data.choices[0] && data.choices[0].message) {
       const raw = data.choices[0].message.content
