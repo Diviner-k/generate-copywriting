@@ -57,7 +57,11 @@ export default {
   },
   onLoad(options) {
     try {
-      this.result = JSON.parse(decodeURIComponent(options.data))
+      const parsed = JSON.parse(decodeURIComponent(options.data))
+      this.result = {
+        xiaohongshu: { title: '', content: '', tags: [], ...(parsed.xiaohongshu || {}) },
+        pengyouquan: parsed.pengyouquan || []
+      }
     } catch (e) {
       uni.showToast({ title: '数据解析失败', icon: 'none' })
     }
@@ -78,6 +82,9 @@ export default {
         data: text,
         success: () => {
           uni.showToast({ title: '已复制', icon: 'success' })
+        },
+        fail: () => {
+          uni.showToast({ title: '复制失败', icon: 'none' })
         }
       })
     },
