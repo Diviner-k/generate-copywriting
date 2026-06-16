@@ -1,0 +1,7 @@
+{
+  "name": "generate-text",
+  "version": "1.0.0",
+  "description": "AI copywriter cloud function",
+  "main": "index.js",
+  "dependencies": {}
+}
