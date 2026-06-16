@@ -10,12 +10,21 @@ exports.main = async (event) => {
     return { error: true, message: '主题和风格不能为空' }
   }
 
-  // Input length validation
   if (topic.length > 200) {
     return { error: true, message: '主题不能超过200字' }
   }
   if (style.length > 20) {
     return { error: true, message: '风格参数无效' }
+  }
+
+  // 前置检查：API Key 是否配置
+  if (!DASHSCOPE_API_KEY) {
+    return { error: true, message: 'API Key 未配置，请在云函数环境变量中设置 DASHSCOPE_API_KEY' }
+  }
+
+  // 前置检查：fetch 是否可用（需要 Node 18）
+  if (typeof fetch !== 'function') {
+    return { error: true, message: '运行时不支持 fetch，请将云函数运行环境切换为 Node 18' }
   }
 
   const prompt = `你是一个小红书和朋友圈文案专家。请根据以下要求生成文案：
@@ -58,9 +67,12 @@ exports.main = async (event) => {
     })
 
     if (!res.ok) {
-      const errData = await res.json().catch(() => ({}))
-      console.error('DashScope API error:', res.status, errData)
-      return { error: true, message: 'AI 服务返回异常，请重试' }
+      const errText = await res.text().catch(() => '')
+      console.error('DashScope API error:', res.status, errText)
+      if (res.status === 401 || res.status === 403) {
+        return { error: true, message: 'API Key 无效，请检查 DASHSCOPE_API_KEY' }
+      }
+      return { error: true, message: `AI 服务错误(${res.status})，请重试` }
     }
 
     const data = await res.json()
@@ -68,9 +80,8 @@ exports.main = async (event) => {
     if (data.choices && data.choices[0] && data.choices[0].message) {
       const raw = data.choices[0].message.content
       if (typeof raw !== 'string') {
-        return { error: true, message: 'AI 服务返回异常，请重试' }
+        return { error: true, message: 'AI 返回格式异常，请重试' }
       }
-      // Try to parse JSON from response (handle possible markdown wrapping)
       const jsonMatch = raw.match(/\{[\s\S]*?\}/)
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0])
@@ -82,7 +93,7 @@ exports.main = async (event) => {
     return { error: true, message: 'AI 服务返回异常，请重试' }
 
   } catch (e) {
-    console.error('generate-text error:', e)
-    return { error: true, message: '服务暂不可用，请稍后重试' }
+    console.error('generate-text error:', e.message || e)
+    return { error: true, message: `服务暂不可用：${e.message || '未知错误'}` }
   }
 }

@@ -5,9 +5,25 @@
     "urlCheck": true,
     "es6": true,
     "postcss": true,
-    "minified": true
+    "minified": true,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
   },
-  "appid": "你的小程序AppID",
+  "appid": "wx834f01615b68369c",
   "projectname": "文案大师",
-  "condition": {}
+  "condition": {},
+  "compileType": "miniprogram",
+  "libVersion": "3.16.1",
+  "srcMiniprogramRoot": "dist/dev/mp-weixin/",
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
 }
