@@ -1,7 +1,48 @@
 'use strict'
 
+const https = require('https')
+
 const DASHSCOPE_API_KEY = process.env.DASHSCOPE_API_KEY
-const API_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions'
+const API_HOST = 'dashscope.aliyuncs.com'
+const API_PATH = '/compatible-mode/v1/chat/completions'
+
+function dashscopeRequest(payload) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify(payload)
+
+    const options = {
+      hostname: API_HOST,
+      path: API_PATH,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DASHSCOPE_API_KEY}`,
+        'Content-Length': Buffer.byteLength(body)
+      },
+      timeout: 30000
+    }
+
+    const req = https.request(options, (res) => {
+      let data = ''
+      res.on('data', (chunk) => { data += chunk })
+      res.on('end', () => {
+        resolve({ status: res.statusCode, body: data })
+      })
+    })
+
+    req.on('timeout', () => {
+      req.destroy()
+      reject(new Error('请求超时'))
+    })
+
+    req.on('error', (e) => {
+      reject(e)
+    })
+
+    req.write(body)
+    req.end()
+  })
+}
 
 exports.main = async (event) => {
   const { topic, style } = event
@@ -17,14 +58,8 @@ exports.main = async (event) => {
     return { error: true, message: '风格参数无效' }
   }
 
-  // 前置检查：API Key 是否配置
   if (!DASHSCOPE_API_KEY) {
     return { error: true, message: 'API Key 未配置，请在云函数环境变量中设置 DASHSCOPE_API_KEY' }
-  }
-
-  // 前置检查：fetch 是否可用（需要 Node 18）
-  if (typeof fetch !== 'function') {
-    return { error: true, message: '运行时不支持 fetch，请将云函数运行环境切换为 Node 18' }
   }
 
   const prompt = `你是一个小红书和朋友圈文案专家。请根据以下要求生成文案：
@@ -49,40 +84,29 @@ exports.main = async (event) => {
 }`
 
   try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${DASHSCOPE_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'qwen-turbo',
-        messages: [
-          { role: 'system', content: '你是一个专业的文案生成助手。只输出JSON，不要输出其他内容。' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.9,
-        max_tokens: 2000
-      })
+    const { status, body } = await dashscopeRequest({
+      model: 'qwen-turbo',
+      messages: [
+        { role: 'system', content: '你是一个专业的文案生成助手。只输出JSON，不要输出其他内容。' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.9,
+      max_tokens: 2000
     })
 
-    const resText = await res.text()
-    console.log('DashScope response status:', res.status, 'body length:', resText.length)
-
-    if (!res.ok) {
-      console.error('DashScope API error:', res.status, resText)
-      if (res.status === 401 || res.status === 403) {
+    if (status !== 200) {
+      console.error('DashScope API error:', status, body.substring(0, 500))
+      if (status === 401 || status === 403) {
         return { error: true, message: 'API Key 无效，请检查 DASHSCOPE_API_KEY' }
       }
-      return { error: true, message: `AI 服务错误(${res.status})，请重试` }
+      return { error: true, message: `AI 服务错误(${status})，请重试` }
     }
 
     let data
     try {
-      data = JSON.parse(resText)
-    } catch (parseErr) {
-      console.error('JSON parse failed, raw response:', resText.substring(0, 500))
-      return { error: true, message: `AI 返回非 JSON：${resText.substring(0, 100)}` }
+      data = JSON.parse(body)
+    } catch (e) {
+      return { error: true, message: `AI 返回非 JSON：${body.substring(0, 80)}` }
     }
 
     if (data.choices && data.choices[0] && data.choices[0].message) {
