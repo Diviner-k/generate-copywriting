@@ -1,5 +1,14 @@
 <template>
   <view class="page">
+    <!-- Error State -->
+    <view v-if="hasError" class="error-state">
+      <text class="error-state__icon">😵</text>
+      <text class="error-state__text">数据加载失败</text>
+      <button class="action__btn" @click="goBack">🔄 返回重试</button>
+    </view>
+
+    <!-- Normal Content -->
+    <template v-else>
     <!-- 小红书 Section -->
     <view class="section">
       <text class="section__title">📕 小红书文案</text>
@@ -42,6 +51,7 @@
         🔄 重新生成
       </button>
     </view>
+    </template>
   </view>
 </template>
 
@@ -49,6 +59,7 @@
 export default {
   data() {
     return {
+      hasError: false,
       result: {
         xiaohongshu: { title: '', content: '', tags: [] },
         pengyouquan: []
@@ -63,6 +74,7 @@ export default {
         pengyouquan: parsed.pengyouquan || []
       }
     } catch (e) {
+      this.hasError = true
       uni.showToast({ title: '数据解析失败', icon: 'none' })
     }
   },
@@ -89,7 +101,12 @@ export default {
       })
     },
     goBack() {
-      uni.navigateBack()
+      const pages = getCurrentPages()
+      if (pages.length > 1) {
+        uni.navigateBack()
+      } else {
+        uni.redirectTo({ url: '/pages/index/index' })
+      }
     }
   }
 }
@@ -98,6 +115,22 @@ export default {
 <style scoped>
 .page {
   padding: 32rpx;
+}
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 200rpx;
+}
+.error-state__icon {
+  font-size: 80rpx;
+  margin-bottom: 24rpx;
+}
+.error-state__text {
+  font-size: 28rpx;
+  color: #9CA3AF;
+  margin-bottom: 48rpx;
 }
 .section {
   margin-bottom: 32rpx;

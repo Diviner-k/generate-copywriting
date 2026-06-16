@@ -76,7 +76,7 @@ exports.main = async (event) => {
         const parsed = JSON.parse(jsonMatch[0])
         return { result: parsed }
       }
-      return { result: raw, error: true, message: 'JSON解析失败，返回原始内容' }
+      return { error: true, message: '生成结果解析失败，请重试' }
     }
 
     return { error: true, message: 'AI 服务返回异常，请重试' }
