@@ -1,0 +1,13 @@
+{
+  "miniprogramRoot": "dist/dev/mp-weixin/",
+  "cloudfunctionRoot": "cloudfunctions/",
+  "setting": {
+    "urlCheck": true,
+    "es6": true,
+    "postcss": true,
+    "minified": true
+  },
+  "appid": "你的小程序AppID",
+  "projectname": "文案大师",
+  "condition": {}
+}
