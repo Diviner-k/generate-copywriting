@@ -9,7 +9,6 @@ const API_PATH = '/compatible-mode/v1/chat/completions'
 function dashscopeRequest(payload) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify(payload)
-
     const options = {
       hostname: API_HOST,
       path: API_PATH,
@@ -25,20 +24,11 @@ function dashscopeRequest(payload) {
     const req = https.request(options, (res) => {
       let data = ''
       res.on('data', (chunk) => { data += chunk })
-      res.on('end', () => {
-        resolve({ status: res.statusCode, body: data })
-      })
+      res.on('end', () => { resolve({ status: res.statusCode, body: data }) })
     })
 
-    req.on('timeout', () => {
-      req.destroy()
-      reject(new Error('请求超时'))
-    })
-
-    req.on('error', (e) => {
-      reject(e)
-    })
-
+    req.on('timeout', () => { req.destroy(); reject(new Error('请求超时')) })
+    req.on('error', (e) => { reject(e) })
     req.write(body)
     req.end()
   })
@@ -47,10 +37,10 @@ function dashscopeRequest(payload) {
 exports.main = async (event) => {
   const { topic, style } = event
 
+  // Step 1: validate inputs
   if (!topic || !style) {
     return { error: true, message: '主题和风格不能为空' }
   }
-
   if (topic.length > 200) {
     return { error: true, message: '主题不能超过200字' }
   }
@@ -58,11 +48,15 @@ exports.main = async (event) => {
     return { error: true, message: '风格参数无效' }
   }
 
+  // Step 2: check API key
   if (!DASHSCOPE_API_KEY) {
-    return { error: true, message: 'API Key 未配置，请在云函数环境变量中设置 DASHSCOPE_API_KEY' }
+    return { error: true, message: 'API Key 未配置' }
   }
 
-  const prompt = `你是一个小红书和朋友圈文案专家。请根据以下要求生成文案：
+  // Step 3: build prompt
+  let prompt
+  try {
+    prompt = `你是一个小红书和朋友圈文案专家。请根据以下要求生成文案：
 
 主题：${topic}
 风格：${style}
@@ -82,9 +76,14 @@ exports.main = async (event) => {
   },
   "pengyouquan": ["朋友圈文案1", "朋友圈文案2", "朋友圈文案3"]
 }`
+  } catch (e) {
+    return { error: true, message: `Step3-构建prompt失败: ${e.message}` }
+  }
 
+  // Step 4: call API
+  let status, body
   try {
-    const { status, body } = await dashscopeRequest({
+    const result = await dashscopeRequest({
       model: 'qwen-turbo',
       messages: [
         { role: 'system', content: '你是一个专业的文案生成助手。只输出JSON，不要输出其他内容。' },
@@ -93,39 +92,50 @@ exports.main = async (event) => {
       temperature: 0.9,
       max_tokens: 2000
     })
-
-    if (status !== 200) {
-      console.error('DashScope API error:', status, body.substring(0, 500))
-      if (status === 401 || status === 403) {
-        return { error: true, message: 'API Key 无效，请检查 DASHSCOPE_API_KEY' }
-      }
-      return { error: true, message: `AI 服务错误(${status})，请重试` }
-    }
-
-    let data
-    try {
-      data = JSON.parse(body)
-    } catch (e) {
-      return { error: true, message: `AI 返回非 JSON：${body.substring(0, 80)}` }
-    }
-
-    if (data.choices && data.choices[0] && data.choices[0].message) {
-      const raw = data.choices[0].message.content
-      if (typeof raw !== 'string') {
-        return { error: true, message: 'AI 返回格式异常，请重试' }
-      }
-      const jsonMatch = raw.match(/\{[\s\S]*?\}/)
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0])
-        return { result: parsed }
-      }
-      return { error: true, message: '生成结果解析失败，请重试' }
-    }
-
-    return { error: true, message: 'AI 服务返回异常，请重试' }
-
+    status = result.status
+    body = result.body
   } catch (e) {
-    console.error('generate-text error:', e.message || e)
-    return { error: true, message: `服务暂不可用：${e.message || '未知错误'}` }
+    return { error: true, message: `Step4-网络请求失败: ${e.message}` }
   }
+
+  // Step 5: check status
+  if (status !== 200) {
+    if (status === 401 || status === 403) {
+      return { error: true, message: 'API Key 无效，请检查' }
+    }
+    return { error: true, message: `Step5-API状态${status}: ${body.substring(0, 100)}` }
+  }
+
+  // Step 6: parse response JSON
+  let data
+  try {
+    data = JSON.parse(body)
+  } catch (e) {
+    return { error: true, message: `Step6-解析响应失败: ${body.substring(0, 100)}` }
+  }
+
+  // Step 7: extract AI content
+  if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+    return { error: true, message: `Step7-响应结构异常: ${JSON.stringify(data).substring(0, 200)}` }
+  }
+
+  const raw = data.choices[0].message.content
+  if (typeof raw !== 'string') {
+    return { error: true, message: 'Step7-content不是字符串' }
+  }
+
+  // Step 8: extract JSON from AI response
+  let parsed
+  try {
+    const jsonMatch = raw.match(/\{[\s\S]*?\}/)
+    if (!jsonMatch) {
+      return { error: true, message: `Step8-未找到JSON: ${raw.substring(0, 100)}` }
+    }
+    parsed = JSON.parse(jsonMatch[0])
+  } catch (e) {
+    return { error: true, message: `Step8-解析AI输出失败: ${e.message}` }
+  }
+
+  // Success!
+  return { result: parsed }
 }
