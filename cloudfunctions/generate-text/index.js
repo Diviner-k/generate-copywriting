@@ -127,11 +127,33 @@ exports.main = async (event) => {
   // Step 8: extract JSON from AI response
   let parsed
   try {
-    const jsonMatch = raw.match(/\{[\s\S]*?\}/)
-    if (!jsonMatch) {
+    let text = raw.trim()
+
+    // Attempt 1: parse entire content as JSON
+    try { parsed = JSON.parse(text); return { result: parsed } } catch (_) {}
+
+    // Attempt 2: strip markdown code fences, try again
+    const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/)
+    if (fenceMatch) {
+      try { parsed = JSON.parse(fenceMatch[1].trim()); return { result: parsed } } catch (_) {}
+    }
+
+    // Attempt 3: find outermost balanced {...}
+    const start = text.indexOf('{')
+    if (start === -1) {
       return { error: true, message: `Step8-未找到JSON: ${raw.substring(0, 100)}` }
     }
-    parsed = JSON.parse(jsonMatch[0])
+    let depth = 0
+    let end = -1
+    for (let i = start; i < text.length; i++) {
+      if (text[i] === '{') depth++
+      if (text[i] === '}') depth--
+      if (depth === 0) { end = i; break }
+    }
+    if (end === -1) {
+      return { error: true, message: `Step8-JSON括号不匹配: ${raw.substring(0, 100)}` }
+    }
+    parsed = JSON.parse(text.substring(start, end + 1))
   } catch (e) {
     return { error: true, message: `Step8-解析AI输出失败: ${e.message}` }
   }
