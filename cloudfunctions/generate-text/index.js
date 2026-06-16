@@ -10,6 +10,14 @@ exports.main = async (event) => {
     return { error: true, message: '主题和风格不能为空' }
   }
 
+  // Input length validation
+  if (topic.length > 200) {
+    return { error: true, message: '主题不能超过200字' }
+  }
+  if (style.length > 20) {
+    return { error: true, message: '风格参数无效' }
+  }
+
   const prompt = `你是一个小红书和朋友圈文案专家。请根据以下要求生成文案：
 
 主题：${topic}
@@ -49,12 +57,21 @@ exports.main = async (event) => {
       })
     })
 
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}))
+      console.error('DashScope API error:', res.status, errData)
+      return { error: true, message: 'AI 服务返回异常，请重试' }
+    }
+
     const data = await res.json()
 
     if (data.choices && data.choices[0] && data.choices[0].message) {
       const raw = data.choices[0].message.content
+      if (typeof raw !== 'string') {
+        return { error: true, message: 'AI 服务返回异常，请重试' }
+      }
       // Try to parse JSON from response (handle possible markdown wrapping)
-      const jsonMatch = raw.match(/\{[\s\S]*\}/)
+      const jsonMatch = raw.match(/\{[\s\S]*?\}/)
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0])
         return { result: parsed }
