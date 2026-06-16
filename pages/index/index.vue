@@ -26,6 +26,7 @@
           :key="s.value"
           :icon="s.icon"
           :label="s.label"
+          :color="s.color"
           :selected="selectedStyle === s.value"
           @select="selectedStyle = s.value"
         />
@@ -57,11 +58,11 @@ export default {
       selectedStyle: '',
       loading: false,
       styles: [
-        { value: '高级感', label: '高级感', icon: '✨' },
-        { value: '种草', label: '种草', icon: '🌿' },
-        { value: 'emo', label: 'emo', icon: '😢' },
-        { value: '可爱', label: '可爱', icon: '🎀' },
-        { value: '幽默', label: '幽默', icon: '😂' }
+        { value: '高级感', label: '高级感', icon: '✨', color: '#B347FF' },
+        { value: '种草', label: '种草', icon: '🌿', color: '#5EFF7E' },
+        { value: 'emo', label: 'emo', icon: '😢', color: '#00E5FF' },
+        { value: '可爱', label: '可爱', icon: '🎀', color: '#FF2D78' },
+        { value: '幽默', label: '幽默', icon: '😂', color: '#FFD23F' }
       ]
     }
   },
