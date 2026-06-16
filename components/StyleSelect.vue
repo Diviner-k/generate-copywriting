@@ -5,7 +5,7 @@
     :style="cardStyle"
     @click="$emit('select')"
   >
-    <view v-if="selected" class="style-card__check">✓</view>
+    <view v-if="selected" class="style-card__check" :style="{ background: color }">✓</view>
     <text class="style-card__icon" :style="{ color: color }">{{ icon }}</text>
     <text class="style-card__label">{{ label }}</text>
   </view>
@@ -78,14 +78,14 @@ export default {
   width: 40rpx;
   height: 40rpx;
   border-radius: 50%;
-  background: #2D1528;
+  background: #FFFFFF;
   color: #FFFFFF;
   font-size: 24rpx;
   font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.2);
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.15);
   z-index: 2;
 }
 
