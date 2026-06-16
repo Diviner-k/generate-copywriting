@@ -51,7 +51,6 @@ export default {
   border-radius: 24rpx;
   background: #FFFFFF;
   border: 2rpx solid #F0E8ED;
-  margin-right: 16rpx;
   box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
   flex-shrink: 0;
   box-sizing: border-box;

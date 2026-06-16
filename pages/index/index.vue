@@ -32,7 +32,7 @@
       <!-- Style Selection -->
       <view class="style-section">
         <text class="style-section__label">🎨 选个风格吧 ✨</text>
-        <scroll-view class="style-section__list" scroll-x>
+        <view class="style-section__list">
           <StyleSelect
             v-for="s in styles"
             :key="s.value"
@@ -42,7 +42,7 @@
             :selected="selectedStyle === s.value"
             @select="selectedStyle = s.value"
           />
-        </scroll-view>
+        </view>
       </view>
 
       <!-- Generate Button -->
@@ -235,9 +235,11 @@ export default {
   display: block;
 }
 .style-section__list {
-  white-space: nowrap;
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20rpx;
 }
 
 /* ── Action button ── */
