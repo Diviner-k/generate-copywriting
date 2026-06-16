@@ -1,6 +1,7 @@
 <script>
 export default {
   onLaunch() {
+    // TODO: 替换为你的 CloudBase 云环境 ID（在微信开发者工具 → 云开发 → 设置 中查看）
     wx.cloud.init({
       env: '你的云环境ID',
       traceUser: true
