@@ -87,6 +87,10 @@ export default {
           uni.showToast({ title: data.message, icon: 'none' })
           return
         }
+        if (!data.result) {
+          uni.showToast({ title: '生成失败，请重试', icon: 'none' })
+          return
+        }
         uni.navigateTo({
           url: '/pages/result/result?data=' + encodeURIComponent(JSON.stringify(data.result))
         })
