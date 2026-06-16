@@ -36,7 +36,7 @@
     <view class="action">
       <button
         class="action__btn"
-        :class="{ 'action__btn--disabled': !canGenerate }"
+        :class="{ 'action__btn--disabled': !canGenerate || loading }"
         :disabled="!canGenerate || loading"
         @click="generate"
       >
