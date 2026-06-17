@@ -116,6 +116,12 @@ export default {
         this.loading = false
       }
     }
+  },
+  onShareAppMessage() {
+    return {
+      title: '文案大师 - 一键生成小红书朋友圈文案 🌈',
+      path: '/pages/index/index'
+    }
   }
 }
 </script>

@@ -69,8 +69,11 @@
         </view>
       </view>
 
-      <!-- Regenerate Button -->
-      <view class="action">
+      <!-- Action Buttons -->
+      <view class="actions">
+        <button class="actions__share" open-type="share">
+          <text class="actions__share-text">📤 分享给朋友</text>
+        </button>
         <view class="action__rainbow">
           <view class="action__btn" @click="goBack">
             <text class="action__btn-text">🔄 再生成一条</text>
@@ -140,6 +143,12 @@ export default {
       } else {
         uni.redirectTo({ url: '/pages/index/index' })
       }
+    }
+  },
+  onShareAppMessage() {
+    return {
+      title: '看看我用文案大师生成的文案！✨',
+      path: '/pages/index/index'
     }
   }
 }
@@ -363,11 +372,36 @@ export default {
 }
 
 /* ===== Bottom Action ===== */
-.action {
+.actions {
   margin-top: 20rpx;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  gap: 20rpx;
   animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+}
+
+/* Share button */
+.actions__share {
+  width: 100%;
+  height: 90rpx;
+  border-radius: 50rpx;
+  background: linear-gradient(135deg, #FF2D78, #B347FF);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 16rpx rgba(255, 45, 120, 0.25);
+}
+.actions__share::after {
+  border: none;
+}
+.actions__share:active {
+  transform: scale(0.96);
+}
+.actions__share-text {
+  color: #FFFFFF;
+  font-size: 32rpx;
+  font-weight: bold;
 }
 
 /* Rainbow border wrapper via gradient background */
