@@ -77,7 +77,11 @@ export default {
         { value: '种草',   label: '种草',   icon: '🌿', color: '#5EFF7E' },
         { value: 'emo',    label: 'emo',    icon: '😢', color: '#00E5FF' },
         { value: '可爱',   label: '可爱',   icon: '🎀', color: '#FF2D78' },
-        { value: '幽默',   label: '幽默',   icon: '😂', color: '#FFD23F' }
+        { value: '幽默',   label: '幽默',   icon: '😂', color: '#FFD23F' },
+        { value: '治愈',   label: '治愈',   icon: '🧘', color: '#3ED4C4' },
+        { value: '励志',   label: '励志',   icon: '💪', color: '#FF9500' },
+        { value: '毒舌',   label: '毒舌',   icon: '🔥', color: '#FF3B30' },
+        { value: '温柔',   label: '温柔',   icon: '🌸', color: '#FFB3C1' }
       ]
     }
   },
@@ -108,7 +112,9 @@ export default {
           return
         }
         uni.navigateTo({
-          url: '/pages/result/result?data=' + encodeURIComponent(JSON.stringify(data.result))
+          url: '/pages/result/result?data=' + encodeURIComponent(JSON.stringify(data.result)) +
+               '&topic=' + encodeURIComponent(this.topic.trim()) +
+               '&style=' + encodeURIComponent(this.selectedStyle)
         })
       } catch (e) {
         uni.showToast({ title: '生成失败，请重试', icon: 'none' })

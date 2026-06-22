@@ -74,10 +74,13 @@
         <button class="actions__share" open-type="share">
           <text class="actions__share-text">📤 分享给朋友</text>
         </button>
-        <view class="action__rainbow">
-          <view class="action__btn" @click="goBack">
-            <text class="action__btn-text">🔄 再生成一条</text>
+        <view class="action__rainbow" @click="regenerate">
+          <view class="action__btn">
+            <text class="action__btn-text">{{ regenerating ? '生成中...' : '🔄 再生成一条' }}</text>
           </view>
+        </view>
+        <view class="actions__back" @click="goBack">
+          <text class="actions__back-text">🏠 返回首页</text>
         </view>
       </view>
     </template>
@@ -89,6 +92,9 @@ export default {
   data() {
     return {
       hasError: false,
+      regenerating: false,
+      topic: '',
+      style: '',
       result: {
         xiaohongshu: { title: '', content: '', tags: [] },
         pengyouquan: []
@@ -107,8 +113,38 @@ export default {
       this.hasError = true
       uni.showToast({ title: '数据解析失败', icon: 'none' })
     }
+    // 保存主题和风格，用于重新生成
+    this.topic = decodeURIComponent(options.topic || '')
+    this.style = decodeURIComponent(options.style || '')
   },
   methods: {
+    async regenerate() {
+      if (this.regenerating || !this.topic || !this.style) return
+      this.regenerating = true
+      try {
+        const res = await wx.cloud.callFunction({
+          name: 'generate-text',
+          data: { topic: this.topic, style: this.style }
+        })
+        const data = res.result
+        if (data.error) {
+          uni.showToast({ title: data.message, icon: 'none' })
+          return
+        }
+        if (!data.result) {
+          uni.showToast({ title: '生成失败，请重试', icon: 'none' })
+          return
+        }
+        this.result = {
+          xiaohongshu: { title: '', content: '', tags: [], ...(data.result.xiaohongshu || {}) },
+          pengyouquan: data.result.pengyouquan || []
+        }
+      } catch (e) {
+        uni.showToast({ title: '生成失败，请重试', icon: 'none' })
+      } finally {
+        this.regenerating = false
+      }
+    },
     tagColor(index) {
       return this.tagColors[index % this.tagColors.length]
     },
@@ -402,6 +438,18 @@ export default {
   color: #FFFFFF;
   font-size: 32rpx;
   font-weight: bold;
+}
+
+/* Back button */
+.actions__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 72rpx;
+}
+.actions__back-text {
+  color: #B890A0;
+  font-size: 26rpx;
 }
 
 /* Rainbow border wrapper via gradient background */
