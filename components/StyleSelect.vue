@@ -48,8 +48,8 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 180rpx;
-  height: 160rpx;
+  width: 170rpx;
+  height: 148rpx;
   border-radius: 24rpx;
   background: #FFFFFF;
   border: 2rpx solid #F0E8ED;
@@ -75,12 +75,12 @@ export default {
   position: absolute;
   top: -10rpx;
   right: -10rpx;
-  width: 40rpx;
-  height: 40rpx;
+  width: 36rpx;
+  height: 36rpx;
   border-radius: 50%;
   background: #FFFFFF;
   color: #FFFFFF;
-  font-size: 24rpx;
+  font-size: 20rpx;
   font-weight: bold;
   display: flex;
   align-items: center;
@@ -90,12 +90,12 @@ export default {
 }
 
 .style-card__icon {
-  font-size: 56rpx;
-  margin-bottom: 8rpx;
+  font-size: 48rpx;
+  margin-bottom: 6rpx;
 }
 
 .style-card__label {
-  font-size: 28rpx;
+  font-size: 26rpx;
   font-weight: bold;
   color: #2D1528;
 }

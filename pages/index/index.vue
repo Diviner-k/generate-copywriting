@@ -185,7 +185,7 @@ export default {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  padding: 80rpx 32rpx 56rpx;
+  padding: 48rpx 32rpx 40rpx;
   flex: 1;
 }
 
@@ -194,17 +194,17 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 52rpx;
+  margin-bottom: 36rpx;
 }
 .header__emoji {
-  font-size: 80rpx;
-  margin-bottom: 8rpx;
+  font-size: 64rpx;
+  margin-bottom: 4rpx;
 }
 .header__title {
-  font-size: 56rpx;
+  font-size: 52rpx;
   font-weight: 900;
   color: #2D1528;
-  margin-bottom: 10rpx;
+  margin-bottom: 6rpx;
   letter-spacing: 4rpx;
 }
 .header__subtitle {
@@ -214,7 +214,7 @@ export default {
 
 /* ── Textarea ── */
 .input-section {
-  margin-bottom: 36rpx;
+  margin-bottom: 24rpx;
   border-radius: 24rpx;
   background: #FFFFFF;
   box-shadow: 0 4rpx 20rpx rgba(178, 144, 160, 0.12);
@@ -225,8 +225,8 @@ export default {
 }
 .input-section__textarea {
   width: 100%;
-  height: 240rpx;
-  padding: 28rpx;
+  height: 200rpx;
+  padding: 24rpx;
   box-sizing: border-box;
   font-size: 28rpx;
   color: #2D1528;
@@ -237,13 +237,13 @@ export default {
 
 /* ── Style section ── */
 .style-section {
-  margin-bottom: 52rpx;
+  margin-bottom: 32rpx;
 }
 .style-section__label {
   font-size: 28rpx;
   font-weight: bold;
   color: #2D1528;
-  margin-bottom: 20rpx;
+  margin-bottom: 16rpx;
   display: block;
 }
 .style-section__list {
@@ -251,7 +251,7 @@ export default {
   flex-direction: row;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 20rpx;
+  gap: 16rpx;
 }
 
 /* ── Action button ── */
