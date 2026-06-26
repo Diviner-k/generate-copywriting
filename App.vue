@@ -78,9 +78,6 @@ page {
   --g-shadow-popover: 0 1px 1px rgba(0, 0, 0, 0.02), 0 4px 8px -4px rgba(0, 0, 0, 0.04), 0 16px 24px -8px rgba(0, 0, 0, 0.06);
   --g-shadow-modal: 0 1px 1px rgba(0, 0, 0, 0.02), 0 8px 16px -4px rgba(0, 0, 0, 0.04), 0 24px 32px -8px rgba(0, 0, 0, 0.06);
 
-  /* Focus ring */
-  --g-focus-ring: 0 0 0 2px #ffffff, 0 0 0 4px var(--g-blue-700);
-
   /* Transitions */
   --g-easing: cubic-bezier(0.175, 0.885, 0.32, 1.1);
 }

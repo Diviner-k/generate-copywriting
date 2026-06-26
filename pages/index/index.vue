@@ -42,15 +42,15 @@
         <textarea
           class="input-section__textarea"
           v-model="topic"
-          placeholder="✨ 一句话，生成你的社交文案..."
-          placeholder-style="color: #C9A0B8; font-size: 28rpx; letter-spacing: 1rpx;"
+          placeholder="✨ 写点什么吧，一句话，生成你的社交文案。比如：今天吃了火锅..."
+          placeholder-style="color: #999; font-size: 16px;"
           maxlength="200"
           @focus="textareaFocused = true"
           @blur="textareaFocused = false"
         />
       </view>
 
-      <!-- Image Picker -->
+      <!-- Image Picker (disabled)
       <view class="image-row">
         <view
           class="image-picker"
@@ -73,6 +73,7 @@
           </template>
         </view>
       </view>
+      -->
 
       <!-- Style Selection -->
       <view class="style-section">
@@ -162,14 +163,6 @@ export default {
     };
   },
   computed: {
-    fortuneBg() {
-      // light tint version of the fortune color
-      const c = this.fortune.color;
-      const r = parseInt(c.slice(1, 3), 16);
-      const g = parseInt(c.slice(3, 5), 16);
-      const b = parseInt(c.slice(5, 7), 16);
-      return `linear-gradient(135deg, rgba(${r},${g},${b},0.12), rgba(${r},${g},${b},0.04))`;
-    },
     canGenerate() {
       return this.topic.trim() && this.selectedStyle;
     },
@@ -378,21 +371,22 @@ export default {
 .input-section {
   margin-bottom: var(--g-space-4);
   border-radius: var(--g-radius-sm);
-  background: var(--g-bg-300);
-  border: 1px solid var(--g-gray-200);
+  background: var(--g-bg-100);
+  border: 1.5px solid var(--g-gray-400);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   transition:
     border-color 150ms var(--g-easing),
     box-shadow 150ms var(--g-easing);
 }
 .input-section--focused {
   border-color: var(--g-accent);
-  box-shadow: var(--g-focus-ring);
+  box-shadow: 0 0 0 3px rgba(0, 172, 150, 0.15);
 }
 .input-section__textarea {
   width: 100%;
-  height: 160rpx;
+  height: 180rpx;
   padding: var(--g-space-3);
-  font-size: 14px;
+  font-size: 15px;
   color: var(--g-primary);
   background: transparent;
   border-radius: var(--g-radius-sm);
