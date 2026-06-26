@@ -18,7 +18,7 @@ function dashscopeRequest(payload) {
         'Authorization': `Bearer ${DASHSCOPE_API_KEY}`,
         'Content-Length': Buffer.byteLength(body)
       },
-      timeout: 30000
+      timeout: 60000
     }
 
     const req = https.request(options, (res) => {
@@ -35,7 +35,7 @@ function dashscopeRequest(payload) {
 }
 
 exports.main = async (event) => {
-  const { topic, style } = event
+  const { topic, style, imageUrl } = event
 
   // Step 1: validate inputs
   if (!topic || !style) {
@@ -53,13 +53,15 @@ exports.main = async (event) => {
     return { error: true, message: 'API Key 未配置' }
   }
 
+  const hasImage = !!(imageUrl && typeof imageUrl === 'string' && imageUrl.trim())
+
   // Step 3: build prompt
-  let prompt
+  let prompt, model, messages
   try {
     prompt = `你是一个小红书和朋友圈文案专家。请根据以下要求生成文案：
 
 主题：${topic}
-风格：${style}
+风格：${style}${hasImage ? '\n注意：用户提供了一张图片，请结合图片内容来生成文案。' : ''}
 
 要求：
 - 口语化、有情绪、易传播
@@ -76,6 +78,23 @@ exports.main = async (event) => {
   },
   "pengyouquan": ["朋友圈文案1", "朋友圈文案2", "朋友圈文案3"]
 }`
+
+    if (hasImage) {
+      model = 'qwen-vl-plus'
+      messages = [
+        { role: 'system', content: '你是一个专业的文案生成助手。只输出JSON，不要输出其他内容。' },
+        { role: 'user', content: [
+          { type: 'image_url', image_url: { url: imageUrl.trim() } },
+          { type: 'text', text: prompt }
+        ]}
+      ]
+    } else {
+      model = 'qwen-turbo'
+      messages = [
+        { role: 'system', content: '你是一个专业的文案生成助手。只输出JSON，不要输出其他内容。' },
+        { role: 'user', content: prompt }
+      ]
+    }
   } catch (e) {
     return { error: true, message: `Step3-构建prompt失败: ${e.message}` }
   }
@@ -84,11 +103,8 @@ exports.main = async (event) => {
   let status, body
   try {
     const result = await dashscopeRequest({
-      model: 'qwen-turbo',
-      messages: [
-        { role: 'system', content: '你是一个专业的文案生成助手。只输出JSON，不要输出其他内容。' },
-        { role: 'user', content: prompt }
-      ],
+      model: model,
+      messages: messages,
       temperature: 0.9,
       max_tokens: 2000
     })

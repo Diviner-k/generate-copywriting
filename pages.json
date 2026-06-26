@@ -11,8 +11,32 @@
       "style": {
         "navigationBarTitleText": "生成结果"
       }
+    },
+    {
+      "path": "pages/history/history",
+      "style": {
+        "navigationBarTitleText": "历史记录"
+      }
+    },
+    {
+      "path": "pages/favorites/favorites",
+      "style": {
+        "navigationBarTitleText": "我的收藏"
+      }
     }
   ],
+  "tabBar": {
+    "custom": true,
+    "color": "#B890A0",
+    "selectedColor": "#FF2D78",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页" },
+      { "pagePath": "pages/favorites/favorites", "text": "收藏" },
+      { "pagePath": "pages/history/history", "text": "历史" }
+    ]
+  },
   "globalStyle": {
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "文案大师",

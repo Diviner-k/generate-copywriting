@@ -17,6 +17,12 @@
         <view class="header__underline"></view>
       </view>
 
+      <!-- Image preview (if provided) -->
+      <view v-if="imageUrl" class="image-preview">
+        <image class="image-preview__img" :src="imageUrl" mode="aspectFill" @click="previewImage" />
+        <text class="image-preview__label">📷 参考图片</text>
+      </view>
+
       <!-- 小红书 Section -->
       <view class="section section--xiaohongshu">
         <view class="section__head">
@@ -71,12 +77,17 @@
 
       <!-- Action Buttons -->
       <view class="actions">
-        <button class="actions__share" open-type="share">
-          <text class="actions__share-text">📤 分享给朋友</text>
-        </button>
-        <view class="action__rainbow" @click="regenerate">
+        <view class="action__rainbow" @click="shareCard">
           <view class="action__btn">
-            <text class="action__btn-text">{{ regenerating ? '生成中...' : '🔄 再生成一条' }}</text>
+            <text class="action__btn-text">🖼️ 生成精美卡片 · 分享</text>
+          </view>
+        </view>
+        <view class="actions__row">
+          <view class="actions__fav" :class="{ 'actions__fav--active': isFavorited }" @click="toggleFav">
+            <text>{{ isFavorited ? '⭐ 已收藏' : '🤍 收藏' }}</text>
+          </view>
+          <view class="actions__regenerate" @click="regenerate">
+            <text>🔄 再生成一条</text>
           </view>
         </view>
         <view class="actions__back" @click="goBack">
@@ -84,22 +95,31 @@
         </view>
       </view>
     </template>
+
+    <ShareCard ref="shareCard" />
   </view>
 </template>
 
 <script>
+import { addRecord, toggleFavorite, getHistory } from '@/utils/storage.js'
+import ShareCard from '@/components/ShareCard.vue'
+
 export default {
+  components: { ShareCard },
   data() {
     return {
       hasError: false,
       regenerating: false,
       topic: '',
       style: '',
+      imageUrl: '',
+      isFavorited: false,
+      recordId: '',
       result: {
         xiaohongshu: { title: '', content: '', tags: [] },
         pengyouquan: []
       },
-      tagColors: ['#FF2D78', '#B347FF', '#00E5FF', '#FF6B4A', '#5EFF7E']
+      tagColors: ['#171717', '#00ac96', '#4d4d4d', '#00927f', '#8f8f8f']
     }
   },
   onLoad(options) {
@@ -112,10 +132,16 @@ export default {
     } catch (e) {
       this.hasError = true
       uni.showToast({ title: '数据解析失败', icon: 'none' })
+      return
     }
     // 保存主题和风格，用于重新生成
     this.topic = decodeURIComponent(options.topic || '')
     this.style = decodeURIComponent(options.style || '')
+    // 保存图片链接（选填）
+    this.imageUrl = decodeURIComponent(options.imageUrl || '')
+
+    // 自动保存到历史记录
+    this.saveToHistory()
   },
   methods: {
     async regenerate() {
@@ -124,11 +150,15 @@ export default {
       try {
         const res = await wx.cloud.callFunction({
           name: 'generate-text',
-          data: { topic: this.topic, style: this.style }
+          data: {
+            topic: this.topic,
+            style: this.style,
+            imageUrl: this.imageUrl || undefined
+          }
         })
         const data = res.result
         if (data.error) {
-          uni.showToast({ title: data.message, icon: 'none' })
+          uni.showToast({ title: data.message, icon: 'none', duration: 3000 })
           return
         }
         if (!data.result) {
@@ -139,8 +169,12 @@ export default {
           xiaohongshu: { title: '', content: '', tags: [], ...(data.result.xiaohongshu || {}) },
           pengyouquan: data.result.pengyouquan || []
         }
+        // 重新生成也保存到历史
+        this.saveToHistory()
       } catch (e) {
-        uni.showToast({ title: '生成失败，请重试', icon: 'none' })
+        console.error('Regenerate failed:', e)
+        const msg = e.errMsg || e.message || '生成失败，请重试'
+        uni.showToast({ title: msg, icon: 'none', duration: 4000 })
       } finally {
         this.regenerating = false
       }
@@ -172,6 +206,38 @@ export default {
         }
       })
     },
+    previewImage() {
+      uni.previewImage({
+        urls: [this.imageUrl],
+        current: this.imageUrl
+      })
+    },
+    saveToHistory() {
+      try {
+        addRecord(this.topic, this.style, this.result, this.imageUrl)
+        const list = getHistory()
+        if (list.length > 0) {
+          this.recordId = list[0].id
+          this.isFavorited = list[0].isFavorite
+        }
+      } catch (e) {
+        // silently fail — history is non-critical
+      }
+    },
+    toggleFav() {
+      if (!this.recordId) return
+      this.isFavorited = toggleFavorite(this.recordId)
+      uni.showToast({
+        title: this.isFavorited ? '已收藏 ⭐' : '已取消收藏',
+        icon: 'none'
+      })
+    },
+    shareCard() {
+      this.$refs.shareCard.open({
+        topic: this.topic,
+        style: this.style
+      })
+    },
     goBack() {
       const pages = getCurrentPages()
       if (pages.length > 1) {
@@ -191,311 +257,130 @@ export default {
 </script>
 
 <style scoped>
-/* ===== Design Tokens ===== */
-/* Hot Pink: #FF2D78, Coral: #FF6B4A, Sunny: #FFD23F, Lime: #5EFF7E, Cyan: #00E5FF, Purple: #B347FF */
-/* Bg: #FFFBFC, Text: #2D1528, Subtext: #B890A0, Card bg: #FFFFFF, Success: #5EFF7E */
-
 .page {
-  padding: 40rpx 32rpx;
-  background: #FFFBFC;
+  padding: var(--g-space-8) var(--g-space-4);
+  background: var(--g-bg-200);
   min-height: 100vh;
 }
 
-/* ===== Error State ===== */
+/* Error State */
 .error-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding-top: 200rpx;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 200rpx;
 }
-.error-state__icon {
-  font-size: 80rpx;
-  margin-bottom: 24rpx;
-}
-.error-state__text {
-  font-size: 28rpx;
-  color: #B890A0;
-  margin-bottom: 48rpx;
-}
-.error-state__btn {
-  padding: 20rpx 48rpx;
-  border-radius: 50rpx;
-  background: linear-gradient(135deg, #FF2D78, #B347FF);
-}
-.error-state__btn-text {
-  color: #FFFFFF;
-  font-size: 28rpx;
-  font-weight: bold;
-}
+.error-state__icon { font-size: 48px; margin-bottom: var(--g-space-4); }
+.error-state__text { font-size: 14px; color: var(--g-gray-700); margin-bottom: var(--g-space-8); }
+.error-state__btn { padding: 0 var(--g-space-4); height: 40px; border-radius: var(--g-radius-sm); background: var(--g-primary); display: flex; align-items: center; }
+.error-state__btn-text { color: var(--g-bg-100); font-size: 14px; font-weight: 500; }
 
-/* ===== Celebration Header ===== */
+/* Header */
 .header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 48rpx;
-  animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  display: flex; flex-direction: column; align-items: center; margin-bottom: var(--g-space-8);
+  animation: slideUp 200ms var(--g-easing) both;
 }
-.header__title {
-  font-size: 40rpx;
-  font-weight: bold;
-  color: #2D1528;
-  text-align: center;
-}
-.header__underline {
-  width: 200rpx;
-  height: 6rpx;
-  border-radius: 3rpx;
-  margin-top: 12rpx;
-  background: linear-gradient(90deg, #FF2D78, #FF6B4A, #FFD23F, #5EFF7E, #00E5FF, #B347FF);
-}
+.header__title { font-size: 20px; font-weight: 600; color: var(--g-primary); text-align: center; letter-spacing: -0.4px; }
+.header__underline { width: 64px; height: 3px; border-radius: 2px; margin-top: var(--g-space-2); background: var(--g-accent); }
 
-/* ===== Section ===== */
-.section {
-  margin-bottom: 36rpx;
-  animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+/* Image Preview */
+.image-preview {
+  display: flex; flex-direction: column; align-items: center;
+  margin-bottom: var(--g-space-6); animation: slideUp 200ms var(--g-easing) 50ms both;
 }
-.section--pengyouquan {
-  animation-delay: 0.1s;
-}
+.image-preview__img { width: 100px; height: 100px; border-radius: var(--g-radius-md); }
+.image-preview__label { margin-top: var(--g-space-1); font-size: 12px; color: var(--g-gray-700); }
 
-.section__head {
-  display: flex;
-  align-items: center;
-  margin-bottom: 16rpx;
-}
-.section__dot {
-  width: 12rpx;
-  height: 12rpx;
-  border-radius: 50%;
-  margin-right: 10rpx;
-  flex-shrink: 0;
-}
-.section__dot--pink {
-  background: #FF2D78;
-}
-.section__dot--coral {
-  background: #FF6B4A;
-}
-.section__title {
-  font-size: 30rpx;
-  font-weight: bold;
-  color: #2D1528;
-}
+/* Section */
+.section { margin-bottom: var(--g-space-6); animation: slideUp 200ms var(--g-easing) both; }
+.section--pengyouquan { animation-delay: 100ms; }
+.section__head { display: flex; align-items: center; margin-bottom: var(--g-space-3); }
+.section__dot { width: 8px; height: 8px; border-radius: 50%; margin-right: var(--g-space-2); flex-shrink: 0; }
+.section__dot--pink { background: var(--g-accent); }
+.section__dot--coral { background: var(--g-gray-700); }
+.section__title { font-size: 14px; font-weight: 600; color: var(--g-primary); }
 
-/* ===== Card ===== */
+/* Card */
 .card {
-  background: #FFFFFF;
-  border-radius: 24rpx;
-  padding: 28rpx;
-  box-shadow: 0 4rpx 20rpx rgba(255, 45, 120, 0.08);
+  background: var(--g-bg-300); border-radius: var(--g-radius-md); padding: var(--g-space-4);
+  border: 1px solid var(--g-gray-200);
 }
-.card--xiaohongshu {
-  border-left: 6rpx solid #FF2D78;
-}
-.card--pengyouquan {
-  border-left: 6rpx solid #FF6B4A;
-}
-
-/* --- 小红书 Card --- */
-.card__label {
-  font-size: 24rpx;
-  color: #B890A0;
-  display: block;
-  margin-bottom: 6rpx;
-  margin-top: 20rpx;
-}
-.card__label:first-child {
-  margin-top: 0;
-}
-.card__text {
-  font-size: 28rpx;
-  color: #2D1528;
-  line-height: 1.8;
-  display: block;
-  word-break: break-all;
-}
-.card__text--title {
-  font-size: 34rpx;
-  font-weight: bold;
-  color: #2D1528;
-  line-height: 1.5;
-}
+.card--xiaohongshu { border-left: 3px solid var(--g-primary); }
+.card--pengyouquan { border-left: 3px solid var(--g-gray-400); }
+.card__label { font-size: 12px; color: var(--g-gray-700); display: block; margin-bottom: 2px; margin-top: var(--g-space-3); }
+.card__label:first-child { margin-top: 0; }
+.card__text { font-size: 14px; color: var(--g-primary); line-height: 1.6; display: block; word-break: break-all; }
+.card__text--title { font-size: 16px; font-weight: 600; color: var(--g-primary); line-height: 1.4; }
 
 /* Tags */
-.card__tags {
-  display: flex;
-  flex-wrap: wrap;
-  margin-top: 20rpx;
-  gap: 12rpx;
-}
+.card__tags { display: flex; flex-wrap: wrap; margin-top: var(--g-space-3); gap: var(--g-space-2); }
 .card__tag {
-  color: #FFFFFF;
-  font-size: 22rpx;
-  padding: 6rpx 16rpx;
-  border-radius: 20rpx;
-  font-weight: 500;
-  line-height: 1.6;
+  color: var(--g-bg-100); font-size: 12px; padding: 2px 10px;
+  border-radius: var(--g-radius-full); font-weight: 500; line-height: 1.6;
 }
-
-/* Copy button (gradient pill) */
-.card__copy {
-  margin-top: 24rpx;
-  display: flex;
-  justify-content: flex-end;
-}
+.card__copy { margin-top: var(--g-space-4); display: flex; justify-content: flex-end; }
 .card__copy-text {
-  background: linear-gradient(135deg, #FF2D78, #B347FF);
-  color: #FFFFFF;
-  font-size: 26rpx;
-  font-weight: bold;
-  padding: 14rpx 32rpx;
-  border-radius: 40rpx;
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background: var(--g-primary); color: var(--g-bg-100);
+  font-size: 13px; font-weight: 500; padding: 6px 16px; border-radius: var(--g-radius-full);
+  transition: opacity 150ms var(--g-easing);
 }
-.card__copy-text:active {
-  transform: scale(0.92);
-}
+.card__copy-text:active { opacity: 0.8; }
 
-/* --- 朋友圈 Card --- */
+/* Moments */
 .pyq-item {
-  display: flex;
-  align-items: flex-start;
-  padding: 20rpx 0;
-  border-bottom: 1rpx dashed #F0E0E8;
+  display: flex; align-items: flex-start; padding: var(--g-space-3) 0;
+  border-bottom: 1px dashed var(--g-gray-200);
 }
-.pyq-item--last {
-  border-bottom: none;
-}
+.pyq-item--last { border-bottom: none; }
 .pyq-item__num {
-  width: 36rpx;
-  height: 36rpx;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  margin-right: 16rpx;
-  margin-top: 2rpx;
+  width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  margin-right: var(--g-space-3); margin-top: 2px;
 }
-.pyq-item__num-text {
-  color: #FFFFFF;
-  font-size: 22rpx;
-  font-weight: bold;
-}
-.pyq-item__text {
-  flex: 1;
-  font-size: 28rpx;
-  color: #2D1528;
-  line-height: 1.8;
-}
+.pyq-item__num-text { color: var(--g-bg-100); font-size: 12px; font-weight: 600; }
+.pyq-item__text { flex: 1; font-size: 14px; color: var(--g-primary); line-height: 1.6; }
 .pyq-item__copy {
-  flex-shrink: 0;
-  margin-left: 16rpx;
-  padding: 8rpx 20rpx;
-  border-radius: 24rpx;
-  border: 2rpx solid #FF2D78;
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex-shrink: 0; margin-left: var(--g-space-3); padding: 4px 12px;
+  border-radius: var(--g-radius-sm); border: 1px solid var(--g-primary);
+  transition: opacity 150ms var(--g-easing);
 }
-.pyq-item__copy:active {
-  transform: scale(0.92);
-}
-.pyq-item__copy-text {
-  color: #FF2D78;
-  font-size: 22rpx;
-  font-weight: 600;
-}
+.pyq-item__copy:active { opacity: 0.7; }
+.pyq-item__copy-text { color: var(--g-primary); font-size: 12px; font-weight: 500; }
 
-/* ===== Bottom Action ===== */
+/* Actions */
 .actions {
-  margin-top: 20rpx;
-  display: flex;
-  flex-direction: column;
-  gap: 20rpx;
-  animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+  margin-top: var(--g-space-3); display: flex; flex-direction: column; gap: var(--g-space-3);
+  animation: slideUp 200ms var(--g-easing) 200ms both;
 }
-
-/* Share button */
-.actions__share {
-  width: 100%;
-  height: 90rpx;
-  border-radius: 50rpx;
-  background: linear-gradient(135deg, #FF2D78, #B347FF);
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4rpx 16rpx rgba(255, 45, 120, 0.25);
-}
-.actions__share::after {
-  border: none;
-}
-.actions__share:active {
-  transform: scale(0.96);
-}
-.actions__share-text {
-  color: #FFFFFF;
-  font-size: 32rpx;
-  font-weight: bold;
-}
-
-/* Back button */
-.actions__back {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 72rpx;
-}
-.actions__back-text {
-  color: #B890A0;
-  font-size: 26rpx;
-}
-
-/* Rainbow border wrapper via gradient background */
 .action__rainbow {
-  width: 100%;
-  border-radius: 50rpx;
-  padding: 3rpx;
-  background: linear-gradient(90deg, #FF2D78, #FF6B4A, #FFD23F, #5EFF7E, #00E5FF, #B347FF);
-  animation: rainbowShimmer 3s linear infinite;
-  background-size: 300% 100%;
+  width: 100%; border-radius: var(--g-radius-sm);
+  background: var(--g-primary);
 }
 .action__btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 90rpx;
-  border-radius: 50rpx;
-  background: #FFFFFF;
+  display: flex; align-items: center; justify-content: center;
+  height: 48px; border-radius: var(--g-radius-sm); background: var(--g-primary);
 }
-.action__btn:active {
-  transform: scale(0.97);
-}
-.action__btn-text {
-  color: #FF2D78;
-  font-size: 32rpx;
-  font-weight: bold;
-}
+.action__btn:active { opacity: 0.85; }
+.action__btn-text { color: var(--g-bg-100); font-size: 14px; font-weight: 500; }
 
-/* ===== Animations ===== */
+.actions__row { display: flex; gap: var(--g-space-2); }
+.actions__fav,
+.actions__regenerate {
+  flex: 1; height: 40px; border-radius: var(--g-radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 500;
+  border: 1px solid var(--g-gray-200);
+  background: var(--g-bg-100);
+  color: var(--g-gray-700);
+  transition: all 150ms var(--g-easing);
+}
+.actions__fav:active,
+.actions__regenerate:active { background: var(--g-gray-100); }
+.actions__fav--active { border-color: var(--g-accent); background: rgba(0, 172, 150, 0.06); color: var(--g-accent); }
+
+.actions__back { display: flex; align-items: center; justify-content: center; height: 40px; }
+.actions__back-text { color: var(--g-gray-700); font-size: 13px; }
+
+/* Animations */
 @keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30rpx);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes rainbowShimmer {
-  0% {
-    background-position: 0% 50%;
-  }
-  100% {
-    background-position: 300% 50%;
-  }
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

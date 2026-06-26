@@ -5,21 +5,13 @@
     :style="cardStyle"
     @click="$emit('select')"
   >
-    <view v-if="selected" class="style-card__check" :style="{ background: color }">✓</view>
-    <text class="style-card__icon" :style="{ color: color }">{{ icon }}</text>
+    <view v-if="selected" class="style-card__check">✓</view>
+    <text class="style-card__icon">{{ icon }}</text>
     <text class="style-card__label">{{ label }}</text>
   </view>
 </template>
 
 <script>
-function hexToRgb(hex) {
-  return {
-    r: parseInt(hex.slice(1, 3), 16),
-    g: parseInt(hex.slice(3, 5), 16),
-    b: parseInt(hex.slice(5, 7), 16)
-  }
-}
-
 export default {
   name: 'StyleSelect',
   props: {
@@ -31,11 +23,10 @@ export default {
   computed: {
     cardStyle() {
       if (!this.selected) return {}
-      const { r, g, b } = hexToRgb(this.color)
       return {
-        backgroundColor: `rgba(${r}, ${g}, ${b}, 0.22)`,
-        borderColor: this.color,
-        boxShadow: `0 6rpx 24rpx rgba(${r}, ${g}, ${b}, 0.35)`
+        backgroundColor: 'var(--g-bg-400)',
+        borderColor: 'var(--g-primary)',
+        boxShadow: 'var(--g-shadow-card)'
       }
     }
   }
@@ -48,55 +39,50 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 170rpx;
-  height: 148rpx;
-  border-radius: 24rpx;
-  background: #FFFFFF;
-  border: 2rpx solid #F0E8ED;
-  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+  width: 80px;
+  height: 72px;
+  border-radius: var(--g-radius-sm);
+  background: var(--g-bg-400);
+  border: 1px solid var(--g-gray-200);
   flex-shrink: 0;
-  box-sizing: border-box;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 150ms var(--g-easing);
   position: relative;
 }
 
 .style-card:active {
-  transform: scale(0.95);
+  background: var(--g-gray-100);
 }
 
 .style-card--selected {
-  border-width: 4rpx;
-  border-style: solid;
-  transform: scale(1.06);
+  border-width: 2px;
+  transform: scale(1.04);
 }
 
-/* ✓ checkmark badge */
 .style-card__check {
   position: absolute;
-  top: -10rpx;
-  right: -10rpx;
-  width: 36rpx;
-  height: 36rpx;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: #FFFFFF;
-  color: #FFFFFF;
-  font-size: 20rpx;
-  font-weight: bold;
+  background: var(--g-primary);
+  color: var(--g-bg-100);
+  font-size: 11px;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.15);
   z-index: 2;
 }
 
 .style-card__icon {
-  font-size: 48rpx;
-  margin-bottom: 6rpx;
+  font-size: 24px;
+  margin-bottom: 2px;
 }
 
 .style-card__label {
-  font-size: 26rpx;
-  font-weight: bold;
-  color: #2D1528;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--g-primary);
 }
 </style>

@@ -1,0 +1,7 @@
+{
+  "name": "generate-daily-content",
+  "version": "1.0.0",
+  "description": "AI-generated daily fortune and topics",
+  "main": "index.js",
+  "dependencies": {}
+}
